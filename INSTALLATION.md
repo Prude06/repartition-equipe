@@ -75,8 +75,11 @@ fonctionnent quand même, seule la génération du fichier HTML est indisponible
 
 - Il te demande qui travaille, vérifie chaque personne sur le dépôt, et ne donne rien à
   quelqu'un qui n'y est pas.
-- Il partage d'abord les tâches selon la charge, sans tenir compte des conflits. Il liste
-  ensuite les conflits attendus, propose une variante sans conflit, et attend ton choix.
+- Il partage les tâches proportionnellement à la charge, sans tenir compte des conflits.
+- Avant chaque nouvelle tâche, il vérifie que ta branche est à jour avec la branche commune.
+- Si tu fusionnes après quelqu'un et qu'il y a des conflits, c'est toi qui les résous : il pose
+  alors un verrou visible sur la page, et personne ne pousse vers la branche commune tant
+  qu'il est là.
 - À la validation, il enregistre les tâches sur la page. Quand tu termines une fonctionnalité,
   ton Claude la coche avec ton nom, la date, l'estimation d'un développeur senior, le niveau de
   test et le résultat de la revue de sécurité.

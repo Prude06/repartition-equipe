@@ -18,8 +18,8 @@ chacun peut tout faire. Un autre problème prend sa place.
 - **Le temps de Claude ne dit rien.** Une fonctionnalité faite en dix minutes par Claude ne
   renseigne ni sur son ampleur, ni sur ce qu'elle aurait coûté à la main.
 
-Ce skill partage le travail équitablement, met les conflits attendus sur la table, puis suit
-l'avancement de façon fiable.
+Ce skill partage le travail équitablement, encadre la fusion vers la branche commune, puis
+suit l'avancement de façon fiable.
 
 ## Ce qu'il fait
 
@@ -28,21 +28,27 @@ Tu donnes les noms des personnes. Le skill vérifie sur le dépôt GitHub (via `
 en est collaboratrice ou collaborateur. Quelqu'un qui n'est pas sur le dépôt ne travaille pas
 sur le projet : aucune tâche ne lui est confiée, et le skill te le dit.
 
-### 2. Il répartit d'abord, puis il regarde les conflits
-Il partage les tâches selon la **charge** (estimation senior de chacune), en respectant ce que
-tu as demandé, sans se préoccuper des conflits à ce stade. Ensuite seulement, il liste ce que
-ce partage risque : fichiers touchés par deux personnes, ressources partagées (migrations,
-dépendances, routes, config), dépendances entre tâches.
+### 2. Il répartit proportionnellement à la charge
+Il partage les tâches selon l'estimation senior de chacune, pour que chacun ait une part
+équivalente (ou celle que tu fixes), et **sans tenir compte des conflits de fichiers**. Chaque
+personne reçoit sa branche, ses tâches, et un prompt prêt à coller dans son Claude.
 
-S'il trouve des conflits, il propose une **variante sans conflit** : un fichier n'appartient
-qu'à une personne, chaque ressource partagée a un propriétaire. Il indique ce qui change de
-main et ce que ça coûte en équilibre. **Tu choisis** : partage équilibré avec les fichiers à
-coordonner, ou variante sans conflit. Rien n'est appliqué ni écrit dans le suivi avant ton choix.
+### 3. Il encadre la fusion vers la branche commune
+Les conflits se règlent au moment de la fusion, avec trois règles :
 
-Chaque personne reçoit ensuite sa branche, son périmètre, les fichiers à coordonner avec qui,
-et un prompt prêt à coller dans son Claude.
+- **Être à jour avant chaque nouvelle tâche.** Avant de démarrer, chacun fait `git fetch` et
+  vérifie qu'il a tout ce que `dev` contient. Sinon il met sa branche à jour d'abord.
+- **Celui qui arrive après résout.** Si quelqu'un a déjà fusionné et que ta fusion crée des
+  conflits, c'est toi qui les résous.
+- **Aucun push pendant ce temps.** Dès que quelqu'un commence à résoudre des conflits, il pose
+  un verrou visible sur la page de suivi. Personne d'autre ne pousse vers `dev` avant sa
+  libération, puis chacun se remet à jour.
 
-### 3. Il tient une page de suivi
+Le verrou est coopératif : il protège les sessions qui utilisent le skill, pas un `git push`
+tapé à la main. Pour un blocage côté GitHub, active la protection de branche « Require branches
+to be up to date before merging ».
+
+### 4. Il tient une page de suivi
 Après ta validation, les tâches sont enregistrées sur une page web partagée. Personne ne coche à
 la main : c'est le Claude de la personne qui termine, après avoir vérifié son travail.
 
@@ -60,7 +66,7 @@ Chaque projet a **sa propre page**, partagée seulement avec son équipe : perso
 tâches d'un projet auquel il n'appartient pas. L'adresse de la page est dans `suivi/config.json`
 du dépôt, ce qui permet à chaque collègue de la retrouver.
 
-### 4. Il garde une copie privée dans chaque dépôt
+### 5. Il garde une copie privée dans chaque dépôt
 En plus de la page en direct, chaque tâche est écrite dans `suivi/tasks/<id>.json` du dépôt
 concerné, donc privée comme le dépôt et suivie par git. Un fichier par tâche évite les conflits
 de fusion. Le script `generer-suivi.py` en tire un fichier HTML autonome (`suivi/suivi.html`) à
@@ -74,6 +80,7 @@ régénéré à la demande, après un `git pull`.
 - Il ne coche jamais une tâche dont le code n'a pas été relu ou testé. Un contrôle de sécurité
   non fait reste « non vérifié », il n'est jamais déclaré « aucune faille » par défaut.
 - Il n'écrase jamais une tâche existante en ajoutant de nouvelles tâches.
+- Il ne pousse jamais vers la branche commune quand un verrou de fusion est posé.
 - Il ne crée ni commit, ni branche, ni push de lui-même.
 
 ## Installation
@@ -92,5 +99,6 @@ dans [INSTALLATION.md](INSTALLATION.md). Le comportement exact du skill est déc
   mesures.
 - Si `gh` n'est pas disponible, la vérification se rabat sur les auteurs de commits : elle est
   alors incomplète, car un collaborateur qui n'a jamais commité n'apparaît pas.
-- Le skill réduit les risques de conflit, il ne les supprime pas : les fichiers impossibles à
-  isoler sont signalés dans le plan, avec la personne qui en est responsable.
+- Le partage ignore les conflits : ils arrivent à la fusion, où le skill les encadre sans les
+  supprimer. Plus deux personnes touchent les mêmes fichiers, plus la fusion coûte.
+- Le verrou de fusion ne bloque pas un `git push` fait hors du skill.

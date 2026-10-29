@@ -1,15 +1,16 @@
 ---
 name: repartition-equipe
-description: Répartit une liste de tâches entre plusieurs collègues qui travaillent en parallèle avec Claude sur le même projet, en deux temps : d'abord un partage équilibré par charge sans tenir compte des conflits, puis l'analyse des conflits attendus (fichiers, migrations, routes, dépendances) et une variante sans conflit au choix de Prude. Vérifie sur GitHub qui est sur le dépôt, puis produit un plan par personne avec ordre d'exécution et points de synchronisation. À utiliser dès que Prude (ou un collègue) soumet une liste de tâches/fonctionnalités/bugs en disant « on est N », « répartis les tâches », « qui fait quoi », ou quand plusieurs personnes vont lancer Claude en même temps sur le même dépôt.
+description: Répartit une liste de tâches entre plusieurs collègues qui travaillent en parallèle avec Claude sur le même projet, de façon proportionnelle à la charge et sans tenir compte des conflits, puis encadre l'intégration vers la branche commune (dev) : branche à jour avant chaque nouvelle tâche, et verrou de fusion pendant qu'une personne résout des conflits. Vérifie sur GitHub qui est sur le dépôt et tient le suivi des tâches. À utiliser dès que Prude (ou un collègue) soumet une liste de tâches/fonctionnalités/bugs en disant « on est N », « répartis les tâches », « qui fait quoi », ou avant de pousser/fusionner vers la branche commune quand plusieurs personnes travaillent sur le dépôt.
 ---
 
-# Répartir les tâches d'une équipe, puis maîtriser les conflits
+# Répartir les tâches d'une équipe et encadrer la fusion
 
 Contexte : chaque membre de l'équipe a son propre Claude, donc n'importe qui peut tout faire.
-Le vrai risque n'est plus « qui sait faire quoi » mais **deux personnes qui modifient les mêmes
-fichiers** (conflits git, migrations en double, doublons de code). Ce skill partage d'abord
-le travail équitablement, puis met les conflits attendus sur la table et propose, sans
-l'imposer, une variante qui les évite.
+La question n'est plus « qui sait faire quoi » mais « comment se partager le travail
+équitablement et le réunir proprement ». Ce skill partage les tâches **proportionnellement à
+la charge, sans se soucier des conflits de fichiers**. Les conflits se traitent au moment de
+la fusion vers la branche commune, avec des règles simples (étape 4) : chacun repart d'une
+base à jour, et un seul résout ses conflits à la fois pendant que les push sont bloqués.
 
 ## Premier lancement sur une machine
 
@@ -82,91 +83,88 @@ Demande aussi, seulement si ce n'est pas évident, en un seul message :
 - si certains sont plus à l'aise sur une partie (front, back, mobile) — un critère de
   préférence, jamais une contrainte.
 
-## Étape 2 — Cartographier les tâches
+## Étape 2 — Estimer les tâches
 
 Pour chaque tâche soumise, lis le code **de façon ciblée** (grep/glob, pas de lecture
-exhaustive) et note :
-- les **fichiers/dossiers** qu'elle touchera (par module, pas seulement par nom) ;
-- les **ressources partagées** : schéma de base de données / migrations Prisma, fichiers de
-  routes ou de navigation, `pubspec.yaml` / `package.json` et lockfiles, fichiers de
-  config, thèmes/constantes globales, fichiers générés, barrels (`index`), injection de
-  dépendances, fichiers de traduction ;
-- les **dépendances entre tâches** (B a besoin de ce que A produit : endpoint, modèle,
-  composant).
+exhaustive) pour comprendre ce qu'elle demande, puis estime sa taille (S/M/L) et son effort
+`seniorEstimateH` (voir étape 5). Note aussi les **dépendances** (B a besoin de ce que A
+produit : endpoint, modèle, composant) : ce ne sont pas des conflits, elles servent à ordonner.
+Les fichiers que chaque tâche touchera **ne sont pas analysés** ici.
 
-Si une tâche est trop vague pour être cartographiée, pose la question au lieu d'inventer.
+Si une tâche est trop vague pour être estimée, pose la question au lieu d'inventer.
 
-## Étape 3 — Répartir en deux temps : d'abord la charge, ensuite les conflits
+## Étape 3 — Répartir proportionnellement à la charge
 
-**3a. Répartition initiale, sans tenir compte des conflits.** Partage les tâches entre les
-personnes confirmées uniquement selon la **charge** : estime chaque tâche (`seniorEstimateH`,
-voir étape 5) et équilibre le total par personne. Respecte ce que Prude a demandé (« telle
-tâche à telle personne », préférences) avant tout autre critère. Ne regroupe pas par fichier
-ou par module et n'écarte aucune répartition parce que deux personnes toucheraient les mêmes
-fichiers : à ce stade, les conflits ne comptent pas. Une tâche garde sa personne tant que
-l'équilibre n'impose pas de la déplacer, et les moins de mouvements possibles sont préférés.
+Partage les tâches entre les personnes confirmées sur le dépôt (étape 1) de façon
+**proportionnelle** : le total d'heures senior de chacun doit être aussi proche que possible de
+`total / N` (si Prude a fixé des parts inégales, respecte-les). Règles :
+1. Ce que Prude a demandé explicitement (« telle tâche à telle personne ») passe avant tout.
+2. **Ne tiens pas compte des conflits** : ne regroupe pas par fichier ou par module, n'écarte
+   pas un partage parce que deux personnes toucheraient les mêmes fichiers.
+3. Une dépendance entre deux tâches de personnes différentes se traite par l'ordre (la tâche
+   dont l'autre dépend en vague 1) ou par un contrat (signature, nom de composant) pour
+   travailler sur un faux en attendant.
+4. Si N est plus grand que ce que la charge justifie, dis-le plutôt que de donner des
+   miettes de tâches.
 
-**3b. Ensuite seulement, analyse les conflits de ce partage.** Avec la cartographie de
-l'étape 2, liste chaque point de friction :
-- **fichier ou dossier touché par deux personnes** (ou plus) : le fichier, les tâches et les
-  personnes concernées, et si les modifications risquent d'être aux mêmes endroits ou à des
-  endroits différents du fichier ;
-- **ressource partagée** (migrations, `pubspec`/`package.json` et lockfiles, routes, config,
-  fichiers générés, injection de dépendances, traductions) touchée par plusieurs personnes ;
-- **dépendance entre tâches** de personnes différentes (B a besoin de ce que A produit) : définis
-  le contrat (signature d'endpoint, modèle, nom de composant) pour que B démarre sur un mock,
-  ou mets A en vague 1 et B en vague 2.
-Dis honnêtement ce que tu n'as pas vérifié (cartographie faite par lecture ciblée, pas par
-mesure).
+## Étape 4 — Livrable, puis règles d'intégration
 
-**3c. Propose, sans l'imposer, une variante sans conflit** quand l'analyse en trouve : même
-liste de tâches, mais selon ces règles, par ordre de priorité :
-1. un fichier n'appartient qu'à UNE personne : deux tâches qui touchent le même fichier vont à
-   la même personne ;
-2. chaque ressource partagée a un seul propriétaire ;
-3. regrouper par module ou fonctionnalité, puis rééquilibrer la charge sans casser 1 et 2 ;
-4. si N > nombre de lots indépendants, dis-le plutôt que de forcer un découpage.
-Indique pour la variante : les tâches qui changent de personne, la charge par personne avant
-et après, et ce que ça coûte en équilibre. **Prude choisit** : répartition initiale (conflits
-assumés, avec la liste des fichiers à coordonner) ou variante sans conflit. N'applique jamais la
-variante de toi-même, et ne l'écris pas dans le suivi tant qu'il n'a pas choisi.
-
-## Étape 4 — Livrable (présenter dans le chat, court)
-
-Présente dans cet ordre : (1) la **répartition initiale** par charge (3a), (2) les
-**conflits attendus** (3b) sous forme de tableau « fichier ou ressource → tâches → personnes »,
-(3) la **variante sans conflit** (3c) s'il y en a une, avec son effet sur la charge, puis
-(4) demande à Prude laquelle il retient. Les blocs ci-dessous ne sont produits qu'après son
-choix, pour la répartition retenue.
-
-Écris les périmètres en **dossiers** (`lib/pages/x/`) dès qu'un dossier entier appartient à
-une seule personne ; descends au fichier uniquement quand un dossier est partagé entre
-plusieurs lots (ex. `lib/pages/` ou `lib/cubit/` dans un projet à plat). Un périmètre en
-dossiers est plus lisible et couvre aussi les futurs fichiers créés dedans.
-
-Pour chaque personne :
+Présente dans le chat, court : pour chaque personne,
 
 ```
-### <Prénom> — <thème du lot>  (charge : S/M/L)
-Branche : feat/<prenom>-<sujet>
+### <Prénom> — <thème du lot>  (charge : X h senior, Y % du total)
+Branche : feat/<prenom>-<sujet>, créée depuis <branche commune> à jour
 Tâches : 1. … 2. …
-Périmètre (à toi seul) : lib/pages/x/, lib/cubit/x/ …
-Fichiers partagés (à coordonner avec <Prénom>) : <fichier> — <tâches concernées>
-Interdit de toucher : le périmètre exclusif des autres, sauf accord sur les fichiers partagés
 Dépend de : <rien | tâche de Y, contrat : …>
 ```
 
-Puis :
-- **Ressources partagées** : tableau « ressource → propriétaire » (migrations, deps, routes…).
-- **Ordre** : vague 1 (en parallèle) → point de sync/merge → vague 2.
-- **Ordre de merge** recommandé (le plus « fondation » d'abord) et qui rebase sur quoi.
-- **Prompt prêt à coller** pour le Claude de chaque personne : un bloc court qui rappelle ses
-  tâches, son périmètre exclusif, les fichiers partagés et avec qui les coordonner (« préviens
-  <Prénom> avant d'y toucher, fais des changements petits et localisés, rebase souvent »), ce
-  qu'elle ne doit pas toucher, et « si tu dois modifier un fichier hors périmètre, arrête-toi
-  et dis-le à l'équipe ».
-- **Conflits résiduels** à surveiller (fichiers qu'on n'a pas pu isoler) et comment les
-  gérer (ex. : une seule personne édite, les autres envoient leur ajout).
+puis les totaux (la somme des heures de tous doit égaler le total), l'ordre si des
+dépendances existent, et un **prompt prêt à coller** pour le Claude de chaque personne : ses
+tâches, sa branche et le rappel des règles ci-dessous.
+
+### Règles d'intégration (branche commune)
+
+La branche commune est le champ `brancheCommune` de `suivi/config.json` (ex. `dev`). S'il
+n'existe pas, détecte la branche par défaut du dépôt (`gh repo view --json
+defaultBranchRef`), confirme-la à Prude et enregistre-la dans `suivi/config.json`.
+
+**A. Être à jour avant de prendre une tâche.** Avant de passer une tâche à `doing`, et avant
+d'en prendre une nouvelle :
+1. `git fetch origin`, puis vérifie `git merge-base --is-ancestor origin/<commune> HEAD`.
+2. Si la réponse est non, la branche est en retard : mets-la à jour avec `origin/<commune>`
+   (merge) et règle les conflits éventuels, puis seulement démarre. Une tâche nouvelle part
+   toujours de la branche commune distante à jour.
+3. Si un verrou de fusion existe (B ci-dessous), attends qu'il soit libéré puis refais le
+   `fetch` : la base va changer.
+4. Ne démarre pas la tâche tant que ce n'est pas vrai. Dis à la personne ce qui bloque.
+
+**B. Fusion vers la branche commune : celui qui arrive après résout, et les push sont
+bloqués pendant ce temps.** Quand la personne demande de pousser ou de fusionner vers la
+branche commune :
+1. `git fetch origin`. Lis le document `locks/<commune>` de la page de suivi. S'il existe,
+   quelqu'un résout des conflits : **ne pousse rien**. Dis qui (`holder`) et depuis quand
+   (`since`), et propose de réessayer. Un verrou de plus de 2 h : demande à Prude avant de le
+   considérer comme périmé et de le supprimer.
+2. Si la branche commune distante n'a pas avancé depuis ta dernière mise à jour, pousse :
+   pas de conflit possible.
+3. Si elle a avancé (quelqu'un a déjà fusionné) : fusionne-la dans ta branche.
+   - Sans conflit : relance les tests, puis pousse.
+   - **Avec conflits** : pose le verrou avant de les résoudre. Crée le document
+     `locks/<commune>` avec `holder` (le nom de la personne), `branch`, `tasks` (les
+     `doc_id`), `reason: "résolution de conflits"`, `since` (heure réelle). Écris-le **sans**
+     `if_version` : si le document existe déjà, l'écriture est refusée, donc deux personnes
+     ne peuvent pas poser le verrou en même temps (retombe alors sur l'étape 1). Résous les
+     conflits, relance les tests, pousse, puis **supprime le verrou** (`delete` avec
+     `if_version`).
+4. Libère toujours le verrou, même en cas d'abandon ou d'échec, et dis-le.
+5. Après un push réussi, ajoute à chaque tâche concernée un événement `fusionnée` dans son
+   `history` (nom de la personne, heure, note avec le commit).
+
+**Limite à dire clairement :** ce verrou est coopératif. Il bloque les sessions qui utilisent
+ce skill, pas un `git push` tapé à la main. Pour un blocage réel côté GitHub, propose à Prude
+d'activer la protection de la branche commune avec « Require branches to be up to date
+before merging » (et pull requests obligatoires), via `gh api` : droits d'administrateur
+requis, et ne le fais que s'il le demande.
 
 ## Étape 5 — Suivi (page web en direct + copie privée dans le dépôt)
 
@@ -226,7 +224,7 @@ personnes différentes).
    `suivi-template.html` (même dossier que ce fichier) dans un fichier temporaire en
    remplaçant `<title>Suivi des lots</title>` par `<title>Suivi <Projet></title>`, puis
    publie-le avec l'outil Artifact : `icon: "checklist"`, une `description` d'une phrase, et
-   `capabilities: {"db": {"rules": [{"path": "tasks", "read": "view", "write": "interact"}]}}`.
+   `capabilities: {"db": {"rules": [{"path": "tasks", "read": "view", "write": "interact"}, {"path": "locks", "read": "view", "write": "interact"}]}}`.
 4. Écris l'adresse obtenue dans `suivi/config.json` (et le même fichier dans chaque autre dépôt
    du projet). Dis à Prude qu'il doit **partager la page** avec l'équipe du projet, avec le
    droit de contribuer, depuis son menu Partager : tu ne peux pas le faire. Seules les
@@ -242,7 +240,7 @@ personnes différentes).
 **À la validation du plan**, écris une tâche par document (`batch`, `doc_id` = `<projet>-<n>`),
 sans le champ `example` :
 `project` (nom du projet), `title`, `description`, `assignee`, `lot`, `wave`, `order`,
-`branch`, `perimeter`, `size` (S/M/L), `seniorEstimateH` (nombre), `status: "todo"`.
+`branch`, `size` (S/M/L), `seniorEstimateH` (nombre), `status: "todo"`.
 
 **Heures** : `seniorEstimateH` est le temps qu'un développeur **senior** mettrait à la
 main sur cette fonctionnalité (code + tests + revue). Ce n'est jamais le temps passé par
@@ -284,13 +282,15 @@ Ne coche jamais une tâche dont le code n'a pas été relu ou testé. En cas de 
 
 ## Étape 6 — Garde-fous
 
-- Vérifie avant de rendre le plan : chaque fichier touché par plusieurs personnes figure dans
-  la liste des conflits attendus (3b), et dans la variante sans conflit aucun fichier
-  n'apparaît dans deux périmètres. Fais la vérification explicitement (liste croisée) et
-  mentionne que tu l'as faite.
+- Vérifie avant de rendre le plan : la somme des heures par personne égale le total, chaque
+  personne est confirmée sur le dépôt, et chaque tâche est attribuée une seule fois.
 - Ne lance aucune implémentation tant que Prude n'a pas validé la répartition.
 - Respecte les conventions des autres skills du projet (ex. `flutter-conventions`,
-  `backend-conventions`) pour savoir quels dossiers existent et comment ils sont découpés.
+  `backend-conventions`) pour estimer les tâches.
 - Si les tâches évoluent en cours de route (nouvelle tâche, retard), propose une
   **re-répartition minimale** : ne déplace que ce qui est nécessaire.
-- Ne crée pas de commits, branches ou pushes toi-même sauf demande explicite.
+- Ne crée pas de commits, branches ou pushes toi-même sauf demande explicite. Quand la
+  personne demande un push ou une fusion vers la branche commune, applique les règles
+  d'intégration (étape 4) sans les sauter. Quand la
+personne demande un push ou une fusion vers la branche commune, applique les règles
+d'intégration (étape 4) sans les sauter.
