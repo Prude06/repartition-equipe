@@ -75,7 +75,8 @@ fonctionnent quand même, seule la génération du fichier HTML est indisponible
 
 - Il te demande qui travaille, vérifie chaque personne sur le dépôt, et ne donne rien à
   quelqu'un qui n'y est pas.
-- Il partage les tâches avec des périmètres de fichiers exclusifs, et attend ta validation.
+- Il partage d'abord les tâches selon la charge, sans tenir compte des conflits. Il liste
+  ensuite les conflits attendus, propose une variante sans conflit, et attend ton choix.
 - À la validation, il enregistre les tâches sur la page. Quand tu termines une fonctionnalité,
   ton Claude la coche avec ton nom, la date, l'estimation d'un développeur senior, le niveau de
   test et le résultat de la revue de sécurité.

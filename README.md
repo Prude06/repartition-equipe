@@ -18,7 +18,7 @@ chacun peut tout faire. Un autre problème prend sa place.
 - **Le temps de Claude ne dit rien.** Une fonctionnalité faite en dix minutes par Claude ne
   renseigne ni sur son ampleur, ni sur ce qu'elle aurait coûté à la main.
 
-Ce skill découpe le travail pour que chacun avance sans marcher sur les autres, puis suit
+Ce skill partage le travail équitablement, met les conflits attendus sur la table, puis suit
 l'avancement de façon fiable.
 
 ## Ce qu'il fait
@@ -28,20 +28,19 @@ Tu donnes les noms des personnes. Le skill vérifie sur le dépôt GitHub (via `
 en est collaboratrice ou collaborateur. Quelqu'un qui n'est pas sur le dépôt ne travaille pas
 sur le projet : aucune tâche ne lui est confiée, et le skill te le dit.
 
-### 2. Il répartit sans conflit
-Pour chaque tâche, il repère les fichiers et dossiers qu'elle touchera, les ressources
-partagées (migrations, dépendances, routes, config) et les dépendances entre tâches. Puis :
+### 2. Il répartit d'abord, puis il regarde les conflits
+Il partage les tâches selon la **charge** (estimation senior de chacune), en respectant ce que
+tu as demandé, sans se préoccuper des conflits à ce stade. Ensuite seulement, il liste ce que
+ce partage risque : fichiers touchés par deux personnes, ressources partagées (migrations,
+dépendances, routes, config), dépendances entre tâches.
 
-- **un fichier n'appartient qu'à une seule personne** ;
-- deux tâches qui touchent le même fichier vont à la même personne ;
-- chaque ressource partagée a un propriétaire unique ;
-- si une tâche en attend une autre, un contrat (signature, nom de modèle) permet de travailler
-  en parallèle ;
-- la charge est équilibrée ensuite, sans casser ces règles.
+S'il trouve des conflits, il propose une **variante sans conflit** : un fichier n'appartient
+qu'à une personne, chaque ressource partagée a un propriétaire. Il indique ce qui change de
+main et ce que ça coûte en équilibre. **Tu choisis** : partage équilibré avec les fichiers à
+coordonner, ou variante sans conflit. Rien n'est appliqué ni écrit dans le suivi avant ton choix.
 
-Il croise les périmètres avant de rendre le plan et ne lance rien tant que tu n'as pas validé.
-Chaque personne reçoit sa branche, son périmètre exclusif, ce qu'elle ne doit pas toucher et un
-prompt prêt à coller dans son Claude.
+Chaque personne reçoit ensuite sa branche, son périmètre, les fichiers à coordonner avec qui,
+et un prompt prêt à coller dans son Claude.
 
 ### 3. Il tient une page de suivi
 Après ta validation, les tâches sont enregistrées sur une page web partagée. Personne ne coche à

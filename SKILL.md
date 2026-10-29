@@ -1,14 +1,15 @@
 ---
 name: repartition-equipe
-description: Répartit une liste de tâches entre plusieurs collègues qui travaillent en parallèle avec Claude sur le même projet, sans conflit de travail (fichiers, migrations, routes, dépendances). Demande d'abord combien de personnes sont sur le projet, puis produit un plan par personne avec périmètre de fichiers exclusif, ordre d'exécution et points de synchronisation. À utiliser dès que Prude (ou un collègue) soumet une liste de tâches/fonctionnalités/bugs en disant « on est N », « répartis les tâches », « qui fait quoi », ou quand plusieurs personnes vont lancer Claude en même temps sur le même dépôt.
+description: Répartit une liste de tâches entre plusieurs collègues qui travaillent en parallèle avec Claude sur le même projet, en deux temps : d'abord un partage équilibré par charge sans tenir compte des conflits, puis l'analyse des conflits attendus (fichiers, migrations, routes, dépendances) et une variante sans conflit au choix de Prude. Vérifie sur GitHub qui est sur le dépôt, puis produit un plan par personne avec ordre d'exécution et points de synchronisation. À utiliser dès que Prude (ou un collègue) soumet une liste de tâches/fonctionnalités/bugs en disant « on est N », « répartis les tâches », « qui fait quoi », ou quand plusieurs personnes vont lancer Claude en même temps sur le même dépôt.
 ---
 
-# Répartir les tâches d'une équipe sans conflit
+# Répartir les tâches d'une équipe, puis maîtriser les conflits
 
 Contexte : chaque membre de l'équipe a son propre Claude, donc n'importe qui peut tout faire.
 Le vrai risque n'est plus « qui sait faire quoi » mais **deux personnes qui modifient les mêmes
-fichiers** (conflits git, migrations en double, doublons de code). Ce skill découpe le travail
-pour que chacun avance en parallèle sans se marcher dessus.
+fichiers** (conflits git, migrations en double, doublons de code). Ce skill partage d'abord
+le travail équitablement, puis met les conflits attendus sur la table et propose, sans
+l'imposer, une variante qui les évite.
 
 ## Premier lancement sur une machine
 
@@ -95,25 +96,48 @@ exhaustive) et note :
 
 Si une tâche est trop vague pour être cartographiée, pose la question au lieu d'inventer.
 
-## Étape 3 — Répartir
+## Étape 3 — Répartir en deux temps : d'abord la charge, ensuite les conflits
 
-Règles, par ordre de priorité :
+**3a. Répartition initiale, sans tenir compte des conflits.** Partage les tâches entre les
+personnes confirmées uniquement selon la **charge** : estime chaque tâche (`seniorEstimateH`,
+voir étape 5) et équilibre le total par personne. Respecte ce que Prude a demandé (« telle
+tâche à telle personne », préférences) avant tout autre critère. Ne regroupe pas par fichier
+ou par module et n'écarte aucune répartition parce que deux personnes toucheraient les mêmes
+fichiers : à ce stade, les conflits ne comptent pas. Une tâche garde sa personne tant que
+l'équilibre n'impose pas de la déplacer, et les moins de mouvements possibles sont préférés.
 
-1. **Périmètre exclusif** : un fichier n'appartient qu'à UNE personne. Si deux tâches
-   touchent le même fichier, elles vont à la même personne — sans exception.
-2. **Regrouper par module/fonctionnalité**, pas par nombre de tâches : mieux vaut une charge
-   déséquilibrée sans conflit qu'une charge égale avec des collisions.
-3. **Ressources partagées = un seul propriétaire** : une personne seule gère les migrations,
-   les dépendances (`pubspec`/`package.json`), le routeur et la config. Les autres lui
-   demandent l'ajout, ou le font via la « zone de contact » (étape 4).
-4. **Dépendances** : si B dépend de A, soit même personne, soit A est livrée d'abord
-   (vague 1) et B passe en vague 2 après merge. Définis le **contrat** (signature de l'endpoint,
-   modèle, nom du composant) pour que B puisse démarrer en parallèle sur un faux/mock.
-5. **Équilibrer ensuite** la charge (estimation S/M/L) entre les personnes, sans casser 1–4.
-6. Si N > nombre de lots indépendants, dis-le : mieux vaut que certains soient en
-   revue/test/documentation que de forcer un découpage qui crée des conflits.
+**3b. Ensuite seulement, analyse les conflits de ce partage.** Avec la cartographie de
+l'étape 2, liste chaque point de friction :
+- **fichier ou dossier touché par deux personnes** (ou plus) : le fichier, les tâches et les
+  personnes concernées, et si les modifications risquent d'être aux mêmes endroits ou à des
+  endroits différents du fichier ;
+- **ressource partagée** (migrations, `pubspec`/`package.json` et lockfiles, routes, config,
+  fichiers générés, injection de dépendances, traductions) touchée par plusieurs personnes ;
+- **dépendance entre tâches** de personnes différentes (B a besoin de ce que A produit) : définis
+  le contrat (signature d'endpoint, modèle, nom de composant) pour que B démarre sur un mock,
+  ou mets A en vague 1 et B en vague 2.
+Dis honnêtement ce que tu n'as pas vérifié (cartographie faite par lecture ciblée, pas par
+mesure).
+
+**3c. Propose, sans l'imposer, une variante sans conflit** quand l'analyse en trouve : même
+liste de tâches, mais selon ces règles, par ordre de priorité :
+1. un fichier n'appartient qu'à UNE personne : deux tâches qui touchent le même fichier vont à
+   la même personne ;
+2. chaque ressource partagée a un seul propriétaire ;
+3. regrouper par module ou fonctionnalité, puis rééquilibrer la charge sans casser 1 et 2 ;
+4. si N > nombre de lots indépendants, dis-le plutôt que de forcer un découpage.
+Indique pour la variante : les tâches qui changent de personne, la charge par personne avant
+et après, et ce que ça coûte en équilibre. **Prude choisit** : répartition initiale (conflits
+assumés, avec la liste des fichiers à coordonner) ou variante sans conflit. N'applique jamais la
+variante de toi-même, et ne l'écris pas dans le suivi tant qu'il n'a pas choisi.
 
 ## Étape 4 — Livrable (présenter dans le chat, court)
+
+Présente dans cet ordre : (1) la **répartition initiale** par charge (3a), (2) les
+**conflits attendus** (3b) sous forme de tableau « fichier ou ressource → tâches → personnes »,
+(3) la **variante sans conflit** (3c) s'il y en a une, avec son effet sur la charge, puis
+(4) demande à Prude laquelle il retient. Les blocs ci-dessous ne sont produits qu'après son
+choix, pour la répartition retenue.
 
 Écris les périmètres en **dossiers** (`lib/pages/x/`) dès qu'un dossier entier appartient à
 une seule personne ; descends au fichier uniquement quand un dossier est partagé entre
@@ -127,7 +151,8 @@ Pour chaque personne :
 Branche : feat/<prenom>-<sujet>
 Tâches : 1. … 2. …
 Périmètre (à toi seul) : lib/pages/x/, lib/cubit/x/ …
-Interdit de toucher : tout ce qui est dans le périmètre des autres + ressources partagées
+Fichiers partagés (à coordonner avec <Prénom>) : <fichier> — <tâches concernées>
+Interdit de toucher : le périmètre exclusif des autres, sauf accord sur les fichiers partagés
 Dépend de : <rien | tâche de Y, contrat : …>
 ```
 
@@ -136,8 +161,10 @@ Puis :
 - **Ordre** : vague 1 (en parallèle) → point de sync/merge → vague 2.
 - **Ordre de merge** recommandé (le plus « fondation » d'abord) et qui rebase sur quoi.
 - **Prompt prêt à coller** pour le Claude de chaque personne : un bloc court qui rappelle ses
-  tâches, son périmètre exclusif, ce qu'elle ne doit pas toucher, et « si tu dois modifier un
-  fichier hors périmètre, arrête-toi et dis-le à l'équipe ».
+  tâches, son périmètre exclusif, les fichiers partagés et avec qui les coordonner (« préviens
+  <Prénom> avant d'y toucher, fais des changements petits et localisés, rebase souvent »), ce
+  qu'elle ne doit pas toucher, et « si tu dois modifier un fichier hors périmètre, arrête-toi
+  et dis-le à l'équipe ».
 - **Conflits résiduels** à surveiller (fichiers qu'on n'a pas pu isoler) et comment les
   gérer (ex. : une seule personne édite, les autres envoient leur ajout).
 
@@ -257,8 +284,10 @@ Ne coche jamais une tâche dont le code n'a pas été relu ou testé. En cas de 
 
 ## Étape 6 — Garde-fous
 
-- Vérifie avant de rendre le plan : aucun fichier n'apparaît dans deux périmètres. Fais
-  la vérification explicitement (liste croisée) et mentionne que tu l'as faite.
+- Vérifie avant de rendre le plan : chaque fichier touché par plusieurs personnes figure dans
+  la liste des conflits attendus (3b), et dans la variante sans conflit aucun fichier
+  n'apparaît dans deux périmètres. Fais la vérification explicitement (liste croisée) et
+  mentionne que tu l'as faite.
 - Ne lance aucune implémentation tant que Prude n'a pas validé la répartition.
 - Respecte les conventions des autres skills du projet (ex. `flutter-conventions`,
   `backend-conventions`) pour savoir quels dossiers existent et comment ils sont découpés.
