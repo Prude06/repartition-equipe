@@ -21,10 +21,12 @@ quand tu soumets une liste de tâches (« on est 3 », « répartis les tâches 
 
 ## 2. Obtenir l'accès à la page de suivi
 
-Page : https://claude.ai/artifact/J5zvqXDWLJv5nx2K4mo1DN
+Chaque projet a **sa propre page de suivi**. Son adresse est dans `suivi/config.json` à la
+racine du dépôt du projet (champ `page`) : tu la retrouves après un `git pull`.
 
-- Demande au propriétaire de te partager la page (menu **Partager**) avec le droit de
-  **contribuer** : sans ça, ton Claude ne pourra pas cocher tes tâches.
+- Demande au propriétaire de te partager la page de ton projet (menu **Partager**) avec le
+  droit de **contribuer** : sans ça, ton Claude ne pourra pas cocher tes tâches. Tu ne vois
+  que les pages des projets sur lesquels tu as été ajouté.
 - Utilise un compte Claude de la même organisation que le propriétaire, ou celui qu'il a invité.
 - Ouvre la page une fois pour vérifier que tu la vois.
 

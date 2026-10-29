@@ -57,7 +57,9 @@ Pour chaque tâche, la page affiche :
 - l'**historique** : si quelqu'un d'autre retouche une tâche terminée, la page signale « Repris
   par … » et garde l'auteur d'origine.
 
-La page regroupe plusieurs projets, avec un menu pour passer de l'un à l'autre.
+Chaque projet a **sa propre page**, partagée seulement avec son équipe : personne ne voit les
+tâches d'un projet auquel il n'appartient pas. L'adresse de la page est dans `suivi/config.json`
+du dépôt, ce qui permet à chaque collègue de la retrouver.
 
 ### 4. Il garde une copie privée dans chaque dépôt
 En plus de la page en direct, chaque tâche est écrite dans `suivi/tasks/<id>.json` du dépôt

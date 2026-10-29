@@ -146,9 +146,13 @@ Puis :
 Le suivi existe en **deux exemplaires qui doivent rester identiques**. Personne ne coche à la
 main : c'est Claude qui tient les deux à jour.
 
-1. **Page web en direct** : https://claude.ai/artifact/J5zvqXDWLJv5nx2K4mo1DN (collection
-   `tasks`, écrite avec l'outil `ArtifactData`, à charger via ToolSearch si besoin). Commune à
-   tous les projets.
+1. **Page web en direct, une par projet** (collection `tasks`, écrite avec l'outil
+   `ArtifactData`, à charger via ToolSearch si besoin). Chaque projet a sa propre page, donc
+   ses propres données et sa propre liste de personnes autorisées : une équipe ne voit pas les
+   tâches des autres projets. L'adresse de la page est dans **`suivi/config.json`** du dépôt
+   (`{"projet": "…", "page": "https://claude.ai/artifact/…"}`), versionné avec le projet : c'est
+   ainsi que le skill de chaque collègue retrouve la bonne page. Ne mélange jamais deux
+   projets sur une même page.
 2. **Copie privée dans le dépôt** : `suivi/tasks/<doc_id>.json`, un fichier par tâche (même
    contenu que le document de la page, sans l'identifiant, qui est le nom du fichier). Un
    fichier par tâche évite les conflits de fusion. Pour un projet à plusieurs dépôts (app +
@@ -184,13 +188,25 @@ Ce nom est `doneBy` pour toutes les tâches terminées dans cette session, même
 prénom utilisé dans `assignee` quand c'est la même personne (sinon la page affiche deux
 personnes différentes).
 
-**Nom du projet et numérotation (évite d'écraser d'autres tâches).** La page est commune à
-tous les projets : le champ `project` les distingue.
-1. Liste d'abord les tâches déjà sur la page (`list`/`query` sur `tasks`, par pages) et
-   récupère les noms de projet existants. Si le projet courant y est déjà (même dépôt),
-   réutilise **exactement** son nom ; sinon, pars du nom du dépôt GitHub (ex.
-   `tinwinlinwin-mobile` → « Tinwin mobile ») et confirme-le à Prude pour un nouveau projet.
-   Deux orthographes = deux projets séparés sur la page.
+**Trouver ou créer la page du projet.**
+1. Lis `suivi/config.json` à la racine du dépôt. S'il existe, utilise sa `page` et son
+   `projet` (réutilise ce nom **exactement** dans le champ `project` de chaque tâche).
+2. S'il n'existe pas, c'est un nouveau projet : pars du nom du dépôt GitHub (ex.
+   `tinwinlinwin-mobile` → « Tinwin mobile ») et confirme-le à Prude. Si le projet a
+   plusieurs dépôts (app + backend), demande si une page existe déjà pour ce projet et
+   réutilise-la.
+3. Pour créer la page : charge le skill `artifact-capabilities`, copie
+   `suivi-template.html` (même dossier que ce fichier) dans un fichier temporaire en
+   remplaçant `<title>Suivi des lots</title>` par `<title>Suivi <Projet></title>`, puis
+   publie-le avec l'outil Artifact : `icon: "checklist"`, une `description` d'une phrase, et
+   `capabilities: {"db": {"rules": [{"path": "tasks", "read": "view", "write": "interact"}]}}`.
+4. Écris l'adresse obtenue dans `suivi/config.json` (et le même fichier dans chaque autre dépôt
+   du projet). Dis à Prude qu'il doit **partager la page** avec l'équipe du projet, avec le
+   droit de contribuer, depuis son menu Partager : tu ne peux pas le faire. Seules les
+   personnes confirmées sur le dépôt (étape 1) doivent y avoir accès.
+
+**Numérotation (évite d'écraser d'autres tâches).**
+1. Liste d'abord les tâches déjà sur la page du projet (`list`/`query` sur `tasks`, par pages).
 2. `doc_id` = `<slug-du-projet>-<n>`, où `n` continue après le plus grand numéro déjà utilisé
    pour ce projet. Ne fais jamais un `set` sur un `doc_id` existant (il écraserait la tâche,
    son statut et son historique) : une nouvelle tâche reçoit un nouvel identifiant.
