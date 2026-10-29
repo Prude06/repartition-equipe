@@ -141,11 +141,33 @@ Puis :
 - **Conflits résiduels** à surveiller (fichiers qu'on n'a pas pu isoler) et comment les
   gérer (ex. : une seule personne édite, les autres envoient leur ajout).
 
-## Étape 5 — Suivi sur la page web (après validation de la répartition)
+## Étape 5 — Suivi (page web en direct + copie privée dans le dépôt)
 
-Page : https://claude.ai/artifact/J5zvqXDWLJv5nx2K4mo1DN (collection `tasks`, écrite avec
-l'outil `ArtifactData`, à charger via ToolSearch si besoin). Personne ne coche à la main :
-c'est Claude qui tient la page à jour.
+Le suivi existe en **deux exemplaires qui doivent rester identiques**. Personne ne coche à la
+main : c'est Claude qui tient les deux à jour.
+
+1. **Page web en direct** : https://claude.ai/artifact/J5zvqXDWLJv5nx2K4mo1DN (collection
+   `tasks`, écrite avec l'outil `ArtifactData`, à charger via ToolSearch si besoin). Commune à
+   tous les projets.
+2. **Copie privée dans le dépôt** : `suivi/tasks/<doc_id>.json`, un fichier par tâche (même
+   contenu que le document de la page, sans l'identifiant, qui est le nom du fichier). Un
+   fichier par tâche évite les conflits de fusion. Pour un projet à plusieurs dépôts (app +
+   backend), la tâche va dans le dépôt qu'elle modifie. Le dépôt reste privé comme le projet.
+
+À **chaque** écriture sur la page (création, démarrage, fin, correction, réouverture), réécris
+aussi le fichier JSON correspondant, avec le même contenu. Si l'une des deux écritures
+échoue, dis-le : ne laisse pas les deux copies diverger en silence. Ne fais ni commit ni push
+des fichiers `suivi/` toi-même : propose-le à la personne (ils partent naturellement avec le
+commit de la fonctionnalité, ce qui garde l'historique de qui a changé quoi dans git).
+
+**Copie HTML partageable** : `python3 ~/.claude/skills/repartition-equipe/generer-suivi.py
+<dépôt>` lit `suivi/tasks/*.json` et écrit `suivi/suivi.html`, un fichier autonome (ignoré
+par git) qui s'ouvre dans un navigateur ou s'envoie en pièce jointe. Lance-le quand on te
+demande « le suivi en HTML », après un `git pull` pour avoir les dernières tâches de
+l'équipe. Il n'est pas mis à jour en direct et la page l'indique.
+
+Après un `git pull`, si des fichiers `suivi/tasks/` diffèrent de la page, la page web fait foi
+pour le statut courant, les fichiers font foi pour l'historique déjà commité.
 
 **Qui est la personne de cette session ?** Chaque collègue a son propre Claude avec ce
 skill installé : le nom écrit sur la page doit être le sien, jamais celui d'un autre ni un

@@ -59,6 +59,13 @@ Pour chaque tâche, la page affiche :
 
 La page regroupe plusieurs projets, avec un menu pour passer de l'un à l'autre.
 
+### 4. Il garde une copie privée dans chaque dépôt
+En plus de la page en direct, chaque tâche est écrite dans `suivi/tasks/<id>.json` du dépôt
+concerné, donc privée comme le dépôt et suivie par git. Un fichier par tâche évite les conflits
+de fusion. Le script `generer-suivi.py` en tire un fichier HTML autonome (`suivi/suivi.html`) à
+ouvrir dans un navigateur ou à envoyer. Ce fichier ne se met pas à jour tout seul : il est
+régénéré à la demande, après un `git pull`.
+
 ## Les règles auxquelles il tient
 
 - Il ne devine jamais l'équipe et demande les noms.

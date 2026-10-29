@@ -63,7 +63,13 @@ GitHub) et te demande de le confirmer. Il l'enregistre dans `~/.claude/repartiti
 Ce nom apparaît dans « Fait par » : vérifie qu'il est correct (ton vrai nom, pas un pseudo
 générique) avant de confirmer. Pour le changer plus tard, modifie ce fichier.
 
-## 6. Ce que fait ensuite le skill
+## 6. Python 3 (pour le suivi en HTML)
+
+Le script `generer-suivi.py` n'utilise que la bibliothèque standard de Python 3 : vérifie que
+`python3 --version` répond. Sans lui, la page web en direct et les fichiers `suivi/tasks/`
+fonctionnent quand même, seule la génération du fichier HTML est indisponible.
+
+## 7. Ce que fait ensuite le skill
 
 - Il te demande qui travaille, vérifie chaque personne sur le dépôt, et ne donne rien à
   quelqu'un qui n'y est pas.
@@ -73,6 +79,8 @@ générique) avant de confirmer. Pour le changer plus tard, modifie ce fichier.
   test et le résultat de la revue de sécurité.
 - Si quelqu'un d'autre retouche une tâche terminée, la page affiche « Repris par … » avec
   l'historique.
+- Chaque tâche est aussi écrite dans `suivi/tasks/` du dépôt (copie privée). Ces fichiers
+  partent avec tes commits : le skill ne les commite pas tout seul.
 
 ## En cas de problème
 

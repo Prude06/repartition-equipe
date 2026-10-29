@@ -1,0 +1,384 @@
+<title>Suivi des lots</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Mise en page : bandeau de synthèse, puis un bloc par personne, chaque bloc listant ses tâches en lignes dépliables. */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --fg: #16202e;
+  --muted: #5d6b7e;
+  --line: #d9dfe8;
+  --accent: #2b4fd8;
+  --accent-soft: #e4eafc;
+  --ok: #17794a;
+  --ok-soft: #dcf2e6;
+  --warn: #9a5b00;
+  --warn-soft: #fbecd0;
+  --bad: #b3261e;
+  --bad-soft: #fbe1de;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1520; --surface: #172030; --fg: #e6ebf3; --muted: #93a2b8; --line: #2a3649;
+    --accent: #7d9bff; --accent-soft: #1f2d57;
+    --ok: #55d392; --ok-soft: #13382a; --warn: #f0b256; --warn-soft: #3a2a0d;
+    --bad: #ff8a80; --bad-soft: #432120; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1520; --surface: #172030; --fg: #e6ebf3; --muted: #93a2b8; --line: #2a3649;
+  --accent: #7d9bff; --accent-soft: #1f2d57;
+  --ok: #55d392; --ok-soft: #13382a; --warn: #f0b256; --warn-soft: #3a2a0d;
+  --bad: #ff8a80; --bad-soft: #432120; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.5;
+  padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+button, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.1; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 60ch; }
+.picker { display: flex; flex-direction: column; gap: 4px; }
+.picker label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+select {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 32px 8px 10px; min-width: 220px; max-width: 100%;
+}
+
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.stat { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; border-left: 1px solid var(--line); }
+.stat:first-child { border-left: 0; }
+.stat .k { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.stat .v { font-family: var(--font-mono); font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat .v small { font-size: 13px; color: var(--muted); font-weight: 400; }
+.stat .n { font-size: 12px; color: var(--muted); }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--ok); }
+.stat.alert .v { color: var(--bad); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; color: var(--muted);
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+:root[data-theme="dark"] .chip[aria-pressed="true"] { color: #0b1020; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip[aria-pressed="true"] { color: #0b1020; } }
+.sep { width: 1px; background: var(--line); margin: 2px 4px; }
+
+.group { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.ghead { padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; border-bottom: 1px solid var(--line); }
+.ghead h2 { font-family: var(--font-display); font-size: 18px; margin: 0; }
+.ghead .lot { color: var(--muted); flex: 1 1 200px; min-width: 0; }
+.ghead .prog { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cols, summary.row { display: grid; gap: 12px; align-items: center; grid-template-columns: minmax(0, 3fr) 54px 74px minmax(0, 1.7fr) minmax(0, 1.2fr) minmax(0, 1.2fr); }
+.cols { padding: 8px 16px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
+details.task { border-top: 1px solid var(--line); }
+details.task:first-of-type { border-top: 0; }
+summary.row { padding: 12px 16px; cursor: pointer; list-style: none; }
+summary.row::-webkit-details-marker { display: none; }
+summary.row:hover { background: var(--bg); }
+.title { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+.title span.t { min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
+.box {
+  flex: none; width: 18px; height: 18px; border: 2px solid var(--muted); border-radius: 4px; margin-top: 1px; position: relative;
+}
+.box.done { background: var(--ok); border-color: var(--ok); }
+.box.done::after {
+  content: ""; position: absolute; left: 4px; top: 0; width: 4px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.box.doing { border-color: var(--accent); background: linear-gradient(90deg, var(--accent) 50%, transparent 50%); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.cell { min-width: 0; overflow-wrap: anywhere; }
+.cell .who { display: block; }
+.cell .when { display: block; font-size: 12px; color: var(--muted); }
+.dash { color: var(--muted); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background: var(--line); color: var(--muted); }
+.badge.ok { background: var(--ok-soft); color: var(--ok); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.bad { background: var(--bad-soft); color: var(--bad); }
+.badge.acc { background: var(--accent-soft); color: var(--accent); }
+.ex { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--line); color: var(--muted); border-radius: 3px; padding: 0 4px; margin-left: 6px; vertical-align: middle; }
+.detail { padding: 4px 16px 16px 44px; display: grid; gap: 8px; color: var(--fg); }
+.detail dl { margin: 0; display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 4px 12px; }
+.detail dt { color: var(--muted); }
+.detail dd { margin: 0; overflow-wrap: anywhere; }
+.detail ul { margin: 0; padding-left: 18px; }
+
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: 32px 20px; text-align: center; color: var(--muted); }
+.empty strong { display: block; color: var(--fg); font-family: var(--font-display); font-size: 18px; margin-bottom: 6px; }
+.empty code { font-family: var(--font-mono); color: var(--fg); }
+
+@media (max-width: 860px) {
+  .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat:nth-child(3) { border-left: 0; }
+  .stat:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .cols { display: none; }
+  summary.row { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+  summary.row .title { flex: 1 1 100%; }
+  .cell[data-l]::before { content: attr(data-l) " "; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .cell .who, .cell .when { display: inline; }
+  .detail { padding-left: 16px; }
+}
+@media (prefers-reduced-motion: no-preference) { .bar > i { transition: width .4s ease; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Suivi des lots</h1>
+      <p class="sub">Claude coche les tâches terminées et renseigne qui, quand, les tests et la sécurité. Rien ne se coche à la main ici. Les heures sont l'estimation d'un développeur senior, pas le temps de Claude.</p>
+    </div>
+    <div class="picker">
+      <label for="project">Projet</label>
+      <select id="project"></select>
+    </div>
+  </header>
+  <div id="msg" class="empty" hidden></div>
+  <div id="app" hidden></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { tasks: [], loaded: false, project: null, person: 'all', status: 'all' };
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.toLocaleString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function fmtH(n) { return (Math.round(n * 10) / 10).toString().replace('.', ','); }
+
+const STATUS_LABEL = { todo: 'À faire', doing: 'En cours', done: 'Terminé' };
+const STATUS_ORDER = { doing: 0, todo: 1, done: 2 };
+const TEST_CLASS = { 'aucun': 'warn', 'unitaire': 'acc', 'intégration': 'acc', 'e2e': 'ok' };
+const SEC_CLASS = { 'aucune faille': 'ok', 'corrigée': 'ok', 'à corriger': 'bad', 'non vérifié': '' };
+
+function message(title, body) {
+  const m = $('msg');
+  m.replaceChildren(el('strong', null, title));
+  m.appendChild(document.createTextNode(body));
+  m.hidden = false;
+  $('app').hidden = true;
+}
+
+function projects() {
+  return [...new Set(state.tasks.map((t) => t.project).filter(Boolean))].sort();
+}
+
+function stat(k, v, small, note, alert) {
+  const s = el('div', 'stat' + (alert ? ' alert' : ''));
+  s.appendChild(el('span', 'k', k));
+  const val = el('span', 'v', v);
+  if (small) val.appendChild(el('small', null, small));
+  s.appendChild(val);
+  if (note instanceof Node) s.appendChild(note); else s.appendChild(el('span', 'n', note));
+  return s;
+}
+
+function summary(tasks) {
+  const done = tasks.filter((t) => t.status === 'done');
+  const hTot = tasks.reduce((a, t) => a + (+t.seniorEstimateH || 0), 0);
+  const hDone = done.reduce((a, t) => a + (+t.seniorEstimateH || 0), 0);
+  const tested = done.filter((t) => t.testLevel && t.testLevel !== 'aucun').length;
+  const toFix = tasks.filter((t) => t.securityStatus === 'à corriger').length;
+  const unchecked = done.filter((t) => !t.securityStatus || t.securityStatus === 'non vérifié').length;
+  const pct = tasks.length ? Math.round((done.length / tasks.length) * 100) : 0;
+
+  const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = pct + '%'; bar.appendChild(fill);
+  const strip = el('div', 'strip');
+  strip.appendChild(stat('Avancement', String(done.length), '/ ' + tasks.length + ' tâches', bar));
+  strip.appendChild(stat('Équivalent senior', fmtH(hDone) + ' h', '/ ' + fmtH(hTot) + ' h', hTot ? Math.round((hDone / hTot) * 100) + ' % du travail estimé livré' : 'Aucune estimation'));
+  strip.appendChild(stat('Tests', done.length ? tested + '/' + done.length : '–', 'terminées testées', !done.length ? 'Aucune tâche terminée' : done.length - tested > 0 ? (done.length - tested) + ' sans test' : 'Toutes les tâches terminées sont testées'));
+  strip.appendChild(stat('Sécurité', String(toFix), 'à corriger', unchecked ? unchecked + ' terminée(s) non vérifiée(s)' : 'Aucune tâche terminée sans contrôle', toFix > 0));
+  return strip;
+}
+
+function filters(tasks) {
+  const box = el('div', 'chips');
+  const mk = (label, key, val) => {
+    const b = el('button', 'chip', label);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(state[key] === val));
+    b.addEventListener('click', () => { state[key] = val; render(); });
+    return b;
+  };
+  [['Tout', 'all'], ['En cours', 'doing'], ['À faire', 'todo'], ['Terminé', 'done'], ['Sécurité à corriger', 'sec']].forEach(([l, v]) => box.appendChild(mk(l, 'status', v)));
+  const people = [...new Set(tasks.map((t) => t.assignee).filter(Boolean))].sort();
+  if (people.length > 1) {
+    box.appendChild(el('span', 'sep'));
+    box.appendChild(mk('Toutes les personnes', 'person', 'all'));
+    people.forEach((p) => box.appendChild(mk(p, 'person', p)));
+  }
+  return box;
+}
+
+function badge(text, cls) { return el('span', 'badge' + (cls ? ' ' + cls : ''), text); }
+
+function row(t) {
+  const d = el('details', 'task');
+  const s = el('summary', 'row');
+
+  const title = el('div', 'title');
+  title.appendChild(el('span', 'box ' + (t.status || 'todo')));
+  title.lastChild.setAttribute('role', 'img');
+  title.lastChild.setAttribute('aria-label', STATUS_LABEL[t.status] || 'À faire');
+  const tt = el('span', 't', t.title || 'Sans titre');
+  if (t.example) tt.appendChild(el('span', 'ex', 'Exemple'));
+  title.appendChild(tt);
+  s.appendChild(title);
+
+  const size = el('div', 'cell mono'); size.dataset.l = 'Taille'; size.textContent = t.size || '–'; s.appendChild(size);
+  const h = el('div', 'cell mono'); h.dataset.l = 'Senior'; h.textContent = t.seniorEstimateH != null ? fmtH(+t.seniorEstimateH) + ' h' : '–'; s.appendChild(h);
+
+  const by = el('div', 'cell');
+  if (t.status === 'done' && t.doneBy) {
+    by.appendChild(el('span', 'who', t.doneBy));
+    by.appendChild(el('span', 'when', fmtDate(t.doneAt)));
+    if (t.lastTouchedBy && t.lastTouchedBy !== t.doneBy) {
+      const r = badge('Repris par ' + t.lastTouchedBy, 'warn');
+      r.title = fmtDate(t.lastTouchedAt);
+      by.appendChild(r);
+    }
+  } else {
+    by.appendChild(el('span', 'dash', t.status === 'doing' ? 'En cours' : 'Pas encore faite'));
+  }
+  s.appendChild(by);
+
+  const tests = el('div', 'cell'); tests.dataset.l = 'Tests';
+  if (t.status === 'done' || t.testLevel) {
+    const lvl = t.testLevel || 'aucun';
+    const tot = +t.testsTotal || 0;
+    tests.appendChild(badge(lvl + (tot ? ' ' + (t.testsPassed ?? 0) + '/' + tot : ''), TEST_CLASS[lvl] || ''));
+  } else tests.appendChild(el('span', 'dash', '–'));
+  s.appendChild(tests);
+
+  const sec = el('div', 'cell'); sec.dataset.l = 'Sécurité';
+  if (t.status === 'done' || t.securityStatus) {
+    const st = t.securityStatus || 'non vérifié';
+    sec.appendChild(badge(st, SEC_CLASS[st] || ''));
+  } else sec.appendChild(el('span', 'dash', '–'));
+  s.appendChild(sec);
+  d.appendChild(s);
+
+  const det = el('div', 'detail');
+  if (t.description) det.appendChild(el('div', null, t.description));
+  const dl = el('dl');
+  [['Périmètre', t.perimeter], ['Branche', t.branch], ['Vague', t.wave ? 'Vague ' + t.wave : ''], ['Commit', t.commit], ['Notes', t.notes]]
+    .forEach(([k, v]) => { if (v) { dl.appendChild(el('dt', null, k)); dl.appendChild(el('dd', null, String(v))); } });
+  if (dl.children.length) det.appendChild(dl);
+  if (Array.isArray(t.securityFindings) && t.securityFindings.length) {
+    det.appendChild(el('strong', null, 'Points de sécurité'));
+    const ul = el('ul');
+    t.securityFindings.forEach((f) => ul.appendChild(el('li', null, String(f))));
+    det.appendChild(ul);
+  }
+  if (Array.isArray(t.history) && t.history.length) {
+    det.appendChild(el('strong', null, 'Historique'));
+    const hl = el('ul');
+    t.history.forEach((e) => {
+      const li = el('li', null, (e.action || '') + ' · ' + (e.by || '?') + ' · ' + fmtDate(e.at) + (e.note ? ' · ' + e.note : ''));
+      hl.appendChild(li);
+    });
+    det.appendChild(hl);
+  }
+  if (!det.children.length) det.appendChild(el('span', 'dash', 'Aucun détail renseigné.'));
+  d.appendChild(det);
+  return d;
+}
+
+function groups(tasks) {
+  const frag = document.createDocumentFragment();
+  const by = new Map();
+  tasks.forEach((t) => { const k = t.assignee || 'Non assigné'; if (!by.has(k)) by.set(k, []); by.get(k).push(t); });
+  [...by.keys()].sort().forEach((who) => {
+    const all = by.get(who);
+    const list = all.filter((t) => {
+      if (state.person !== 'all' && who !== state.person) return false;
+      if (state.status === 'sec') return t.securityStatus === 'à corriger';
+      return state.status === 'all' || t.status === state.status;
+    });
+    if (!list.length) return;
+    list.sort((a, b) => (a.wave || 1) - (b.wave || 1) || STATUS_ORDER[a.status || 'todo'] - STATUS_ORDER[b.status || 'todo'] || (a.order || 0) - (b.order || 0));
+    const g = el('section', 'group');
+    const head = el('div', 'ghead');
+    head.appendChild(el('h2', null, who));
+    const lots = [...new Set(all.map((t) => t.lot).filter(Boolean))];
+    head.appendChild(el('span', 'lot', lots.join(' · ')));
+    const dn = all.filter((t) => t.status === 'done');
+    const hd = dn.reduce((a, t) => a + (+t.seniorEstimateH || 0), 0);
+    const ht = all.reduce((a, t) => a + (+t.seniorEstimateH || 0), 0);
+    head.appendChild(el('span', 'prog', dn.length + '/' + all.length + ' tâches · ' + fmtH(hd) + '/' + fmtH(ht) + ' h'));
+    g.appendChild(head);
+    const cols = el('div', 'cols');
+    ['Tâche', 'Taille', 'Senior', 'Fait par', 'Tests', 'Sécurité'].forEach((c) => cols.appendChild(el('span', null, c)));
+    g.appendChild(cols);
+    list.forEach((t) => g.appendChild(row(t)));
+    frag.appendChild(g);
+  });
+  return frag;
+}
+
+function render() {
+  if (!state.loaded) return;
+  const sel = $('project');
+  const ps = projects();
+  if (!ps.length) {
+    sel.replaceChildren();
+    message('Aucune tâche enregistrée', 'Soumettez une liste de tâches avec /repartition-equipe. Claude les ajoutera ici après validation de la répartition.');
+    return;
+  }
+  if (!ps.includes(state.project)) {
+    let saved = null; try { saved = localStorage.getItem('suivi-projet'); } catch (e) {}
+    state.project = ps.includes(saved) ? saved : ps[0];
+  }
+  sel.replaceChildren(...ps.map((p) => { const o = el('option', null, p); o.value = p; o.selected = p === state.project; return o; }));
+  const tasks = state.tasks.filter((t) => t.project === state.project);
+  $('msg').hidden = true;
+  const app = $('app');
+  app.hidden = false;
+  app.style.cssText = 'display:flex;flex-direction:column;gap:20px';
+  const body = groups(tasks);
+  app.replaceChildren(summary(tasks), filters(tasks));
+  if (body.childNodes.length) app.appendChild(body);
+  else app.appendChild(el('div', 'empty', 'Aucune tâche ne correspond à ce filtre.'));
+}
+
+$('project').addEventListener('change', (e) => {
+  state.project = e.target.value; state.person = 'all'; state.status = 'all';
+  try { localStorage.setItem('suivi-projet', state.project); } catch (err) {}
+  render();
+});
+
+if (Array.isArray(window.__TASKS__)) {
+  state.tasks = window.__TASKS__;
+  state.loaded = true;
+  if (window.__GENERATED__) $('app').previousElementSibling.previousElementSibling.querySelector('.sub').appendChild(document.createTextNode(' Copie générée le ' + fmtDate(window.__GENERATED__) + ' : elle ne se met pas à jour toute seule.'));
+  render();
+} else (async () => {
+  message('Chargement', 'Lecture des tâches en cours…');
+  const db = await window.claude?.use?.('db');
+  if (!db) { message('Connexion requise', 'Ouvrez cette page connecté à votre compte pour voir les tâches.'); return; }
+  db.collection('tasks').onSnapshot((snap) => {
+    state.tasks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    state.loaded = true;
+    render();
+  }, () => message('Lecture impossible', "Les tâches n'ont pas pu être chargées. Rechargez la page."));
+})();
+</script>
