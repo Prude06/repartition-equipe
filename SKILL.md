@@ -162,6 +162,18 @@ Ce nom est `doneBy` pour toutes les tâches terminées dans cette session, même
 prénom utilisé dans `assignee` quand c'est la même personne (sinon la page affiche deux
 personnes différentes).
 
+**Nom du projet et numérotation (évite d'écraser d'autres tâches).** La page est commune à
+tous les projets : le champ `project` les distingue.
+1. Liste d'abord les tâches déjà sur la page (`list`/`query` sur `tasks`, par pages) et
+   récupère les noms de projet existants. Si le projet courant y est déjà (même dépôt),
+   réutilise **exactement** son nom ; sinon, pars du nom du dépôt GitHub (ex.
+   `tinwinlinwin-mobile` → « Tinwin mobile ») et confirme-le à Prude pour un nouveau projet.
+   Deux orthographes = deux projets séparés sur la page.
+2. `doc_id` = `<slug-du-projet>-<n>`, où `n` continue après le plus grand numéro déjà utilisé
+   pour ce projet. Ne fais jamais un `set` sur un `doc_id` existant (il écraserait la tâche,
+   son statut et son historique) : une nouvelle tâche reçoit un nouvel identifiant.
+3. Ajouter des tâches à un projet en cours ne touche pas aux tâches existantes.
+
 **À la validation du plan**, écris une tâche par document (`batch`, `doc_id` = `<projet>-<n>`),
 sans le champ `example` :
 `project` (nom du projet), `title`, `description`, `assignee`, `lot`, `wave`, `order`,
