@@ -226,7 +226,10 @@ personnes différentes).
    publie-le avec l'outil Artifact : `icon: "checklist"`, une `description` d'une phrase, et
    `capabilities: {"db": {"rules": [{"path": "tasks", "read": "view", "write": "interact"}, {"path": "locks", "read": "view", "write": "interact"}]}}`.
 4. Écris l'adresse obtenue dans `suivi/config.json` (et le même fichier dans chaque autre dépôt
-   du projet). Dis à Prude qu'il doit **partager la page** avec l'équipe du projet, avec le
+   du projet) et ajoute au `README.md` du dépôt une section « Suivi des tâches » avec l'adresse,
+   la mention que la page est privée (à partager avec le droit de contribuer) et le lien du
+   skill : c'est ce que les collègues liront. Rappelle à Prude de **commiter et pousser**
+   `suivi/config.json` et le README : sans cela personne d'autre ne retrouve la page. Dis à Prude qu'il doit **partager la page** avec l'équipe du projet, avec le
    droit de contribuer, depuis son menu Partager : tu ne peux pas le faire. Seules les
    personnes confirmées sur le dépôt (étape 1) doivent y avoir accès.
 

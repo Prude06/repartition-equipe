@@ -83,6 +83,22 @@ régénéré à la demande, après un `git pull`.
 - Il ne pousse jamais vers la branche commune quand un verrou de fusion est posé.
 - Il ne crée ni commit, ni branche, ni push de lui-même.
 
+## Où trouver la page de suivi de mon projet
+
+Chaque projet a sa propre page, et son adresse n'est pas dans ce dépôt. Pour la trouver :
+
+1. Dans le dépôt de **ton projet** (pas celui du skill), ouvre `suivi/config.json` : le champ
+   `page` contient l'adresse. Elle figure aussi dans le `README.md` du projet, section « Suivi des
+   tâches ».
+2. Si ces fichiers n'existent pas chez toi, fais un `git pull` : ils sont versionnés avec le
+   projet. S'ils n'y sont toujours pas, personne ne les a encore poussés : demande-le à celui qui
+   a lancé la répartition.
+3. La page est privée : demande à son propriétaire de te la partager avec le droit de contribuer.
+   Tu ne verras que les pages des projets sur lesquels tu as été ajouté.
+
+Quand le skill crée la page d'un nouveau projet, il écrit son adresse dans `suivi/config.json` et
+dans le `README.md` du projet. Il te rappelle de les commiter et de partager la page.
+
 ## Installation
 
 ```
